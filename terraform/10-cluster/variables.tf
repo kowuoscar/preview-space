@@ -14,7 +14,7 @@ variable "project" {
 
 variable "env" {
   type    = string
-  default = "Dev"
+  default = "dev"
 }
 
 variable "node_groups" {
