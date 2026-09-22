@@ -59,3 +59,9 @@ resource "aws_route_table" "preview-space-second-route-aws_route_table" {
     Name = "Preview Space Second Route" 
   }
 }
+
+resource "aws_route_table_association" "preview-space-public-subnets-aws_route_table_association" {
+  count = length(var.public_subnet_cidrs)
+  subnet_id = element(aws_subnet.preview-space-public-subnets[*].id, count.index)
+  route_table_id = aws_route_table.preview-space-second-route-aws_route_table.id
+}
