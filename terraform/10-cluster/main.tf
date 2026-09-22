@@ -21,6 +21,7 @@ resource "aws_subnet" "preview-space-public-subnets" {
   count = length(var.public_subnet_cidrs)
   vpc_id = aws_vpc.preview-space-vpc.id
   cidr_block = element(var.public_subnet_cidrs, count.index)
+  availability_zone = element(var.azs, count.index)
 
   tags = {
     Name = "Preview Space Public Subnet ${count.index + 1}"
@@ -31,6 +32,7 @@ resource "aws_subnet" "preview-space-private-subnets" {
   count = length(var.private_subnet_cidrs)
   vpc_id = aws_vpc.preview-space-vpc.id
   cidr_block = element(var.private_subnet_cidrs, count.index)
+  availability_zone = element(var.azs, count.index)
 
   tags = {
     Name = "Preview Space Private Subnet ${count.index + 1}"
