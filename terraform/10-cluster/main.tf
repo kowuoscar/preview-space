@@ -38,3 +38,11 @@ resource "aws_subnet" "preview-space-private-subnets" {
     Name = "Preview Space Private Subnet ${count.index + 1}"
   }
 }
+
+resource "aws_internet_gateway" "preview-space-ig" {
+  vpc_id = aws_vpc.preview-space-vpc.id
+
+  tags = {
+    Name = "Preview Space IG"
+  }
+}
