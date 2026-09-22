@@ -27,6 +27,7 @@ resource "aws_subnet" "preview-space-public-subnets" {
 
   tags = {
     Name = "Preview Space Public Subnet ${count.index + 1}"
+    "kubernetes.io/role/elb" = 1
   }
 }
 
@@ -38,6 +39,7 @@ resource "aws_subnet" "preview-space-private-subnets" {
 
   tags = {
     Name = "Preview Space Private Subnet ${count.index + 1}"
+    "kubernetes.io/role/internal-elb" = 1
   }
 }
 
