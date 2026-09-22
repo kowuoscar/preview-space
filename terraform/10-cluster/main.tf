@@ -17,6 +17,8 @@ resource "aws_vpc" "preview-space-vpc" {
   }
 }
 
+# --- PROVISION OF PUBLIC AND PRIVATE SUBNETS ---
+
 resource "aws_subnet" "preview-space-public-subnets" {
   count = length(var.public_subnet_cidrs)
   vpc_id = aws_vpc.preview-space-vpc.id
@@ -39,29 +41,82 @@ resource "aws_subnet" "preview-space-private-subnets" {
   }
 }
 
-resource "aws_internet_gateway" "preview-space-ig" {
+# --- VPC INTERNET GATEWAY ---
+
+resource "aws_internet_gateway" "preview-space-internet-gateway" {
   vpc_id = aws_vpc.preview-space-vpc.id
 
   tags = {
-    Name = "Preview Space IG"
+    Name = "Preview Space Internet Gateway"
   }
 }
 
-resource "aws_route_table" "preview-space-second-route-aws_route_table" {
+# --- PUBLIC ROUTE TABLES TO ALLOW TRAFFIC INTO PUBLIC SUBNETS ---
+
+resource "aws_route_table" "preview-space-public-route-table" {
   vpc_id = aws_vpc.preview-space-vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.preview-space-ig.id
+    gateway_id = aws_internet_gateway.preview-space-internet-gateway.id
   }
 
   tags = {
-    Name = "Preview Space Second Route" 
+    Name = "Preview Space Public Route Table" 
   }
 }
 
-resource "aws_route_table_association" "preview-space-public-subnets-aws_route_table_association" {
+resource "aws_route_table_association" "preview-space-public-route-asso" {
   count = length(var.public_subnet_cidrs)
   subnet_id = element(aws_subnet.preview-space-public-subnets[*].id, count.index)
-  route_table_id = aws_route_table.preview-space-second-route-aws_route_table.id
+  route_table_id = aws_route_table.preview-space-public-route-table.id
+}
+
+# --- ELASTIC IP ADDRESSES FOR NAT GATEWAY, ONE FOR EACH AZ ---
+
+resource "aws_eip" "preview-space-eips" {
+  count = length(var.public_subnet_cidrs)
+  domain = "vpc"
+  
+  tags = {
+    Name = "Preview Space Elastic IP ${count.index + 1}"
+  }
+
+  depends_on = [ aws_internet_gateway.preview-space-internet-gateway ]
+}
+
+# --- NAT GATEWAY FOR EACH AZ
+
+resource "aws_nat_gateway" "preview-space-nat-gateways" {
+  count = length(var.public_subnet_cidrs)
+  allocation_id = aws_eip.preview-space-eips[count.index].id
+  subnet_id = element(aws_subnet.preview-space-public-subnets[*].id, count.index)
+
+  tags = {
+    Name =  "Preview Space NG ${count.index + 1}"
+  }
+
+  depends_on = [ aws_internet_gateway.preview-space-internet-gateway ]
+}
+
+# Configuration of private route tables for each AZs
+
+resource "aws_route_table" "preview-space-private-route-tables" {
+  count = length(var.private_subnet_cidrs)
+  vpc_id = aws_vpc.preview-space-vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.preview-space-nat-gateways[count.index].id
+  }
+
+  tags = {
+    Name = "Preview Space Private Route ${count.index + 1}" 
+  }
+}
+
+resource "aws_route_table_association" "preview-space-private-routes-asso" {
+  count = length(var.private_subnet_cidrs)
+  subnet_id = element(aws_subnet.preview-space-private-subnets[*].id, count.index)
+  route_table_id = element(aws_route_table.preview-space-private-route-tables[*].id, count.index)
 }
