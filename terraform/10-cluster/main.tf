@@ -46,3 +46,16 @@ resource "aws_internet_gateway" "preview-space-ig" {
     Name = "Preview Space IG"
   }
 }
+
+resource "aws_route_table" "preview-space-second-route-aws_route_table" {
+  vpc_id = aws_vpc.preview-space-vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.preview-space-ig.id
+  }
+
+  tags = {
+    Name = "Preview Space Second Route" 
+  }
+}
